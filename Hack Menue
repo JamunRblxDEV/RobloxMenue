@@ -1,111 +1,147 @@
+-- Advanced Roblox Script with Menu, Spin, and Configurable Aim Assist
+
 -- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local localPlayer = Players.LocalPlayer
 local camera = workspace.CurrentCamera
+local playerGui = localPlayer:WaitForChild("PlayerGui")
 
 -- Settings
-local toggleHighlights = true
+local highlightEnabled = true
 local aimAssistEnabled = true
-local aimRadius = 50 -- pixels
-
+local aimRadius = 50
+local spinEnabled = false
 local highlights = {}
+local spinningAngle = 0
 
--- GUI setup
-local screenGui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
+-- GUI Setup
+local screenGui = Instance.new("ScreenGui", playerGui)
 screenGui.Name = "JamunsGui"
 screenGui.ResetOnSpawn = false
-screenGui.IgnoreGuiInset = true
 
--- Main menu frame
-local frame = Instance.new("Frame", screenGui)
-frame.Size = UDim2.new(0, 220, 0, 160)
-frame.Position = UDim2.new(0, 20, 0, 80)
-frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-frame.BackgroundTransparency = 0.2
+-- Open Button
+local openBtn = Instance.new("TextButton")
+openBtn.Name = "OpenMenu"
+openBtn.Size = UDim2.new(0, 40, 0, 40)
+openBtn.Position = UDim2.new(0, 10, 0, 10)
+openBtn.Text = "+"
+openBtn.Visible = false
+openBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+openBtn.TextColor3 = Color3.new(1, 1, 1)
+openBtn.Font = Enum.Font.GothamBold
+openBtn.TextSize = 24
+openBtn.Parent = screenGui
+
+-- Main Menu
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 220)
+frame.Position = UDim2.new(0, 10, 0, 10)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 frame.Name = "MenuFrame"
+frame.Parent = screenGui
+
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 40, 0, 40)
+closeBtn.Position = UDim2.new(1, -50, 0, 0)
+closeBtn.Text = "-"
+closeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 24
+closeBtn.Parent = frame
 
 -- Title
-local title = Instance.new("TextLabel", frame)
+local title = Instance.new("TextLabel")
 title.Text = "Jamuns Roblox Script"
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.new(1, -60, 0, 40)
+title.Position = UDim2.new(0, 10, 0, 0)
 title.BackgroundTransparency = 1
 title.TextColor3 = Color3.fromRGB(255, 100, 100)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
+title.Parent = frame
 
--- Highlights Button
-local highlightBtn = Instance.new("TextButton", frame)
-highlightBtn.Text = "Highlights: ON"
-highlightBtn.Size = UDim2.new(1, -20, 0, 30)
-highlightBtn.Position = UDim2.new(0, 10, 0, 40)
-highlightBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-highlightBtn.TextColor3 = Color3.new(1, 1, 1)
-highlightBtn.Font = Enum.Font.Gotham
-highlightBtn.TextSize = 16
-highlightBtn.BorderSizePixel = 0
+-- Function for creating toggle buttons
+local function createToggle(text, yPos, initialState, callback)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(1, -20, 0, 30)
+	button.Position = UDim2.new(0, 10, 0, yPos)
+	button.BackgroundColor3 = initialState and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(120, 120, 120)
+	button.TextColor3 = Color3.new(1, 1, 1)
+	button.Font = Enum.Font.Gotham
+	button.TextSize = 16
+	button.Text = text .. ": " .. (initialState and "ON" or "OFF")
+	button.MouseButton1Click:Connect(function()
+		initialState = not initialState
+		button.Text = text .. ": " .. (initialState and "ON" or "OFF")
+		button.BackgroundColor3 = initialState and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(120, 120, 120)
+		callback(initialState)
+	end)
+	button.Parent = frame
+end
 
--- Aim Assist Button
-local aimBtn = Instance.new("TextButton", frame)
-aimBtn.Text = "Aim Assist: ON"
-aimBtn.Size = UDim2.new(1, -20, 0, 30)
-aimBtn.Position = UDim2.new(0, 10, 0, 80)
-aimBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-aimBtn.TextColor3 = Color3.new(1, 1, 1)
-aimBtn.Font = Enum.Font.Gotham
-aimBtn.TextSize = 16
-aimBtn.BorderSizePixel = 0
-
--- Toggle Menu Button (Mobile-friendly)
-local menuToggleBtn = Instance.new("TextButton", screenGui)
-menuToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-menuToggleBtn.Position = UDim2.new(0, 10, 0, 20)
-menuToggleBtn.Text = "☰"
-menuToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-menuToggleBtn.TextColor3 = Color3.new(1, 1, 1)
-menuToggleBtn.Font = Enum.Font.GothamBold
-menuToggleBtn.TextSize = 24
-menuToggleBtn.BorderSizePixel = 0
-menuToggleBtn.ZIndex = 2
-
-local menuVisible = true
-local menuTweenTime = 0.3
-
-menuToggleBtn.MouseButton1Click:Connect(function()
-	menuVisible = not menuVisible
-	local goal = {}
-	goal.Position = menuVisible and UDim2.new(0, 20, 0, 80) or UDim2.new(0, -240, 0, 80)
-	TweenService:Create(frame, TweenInfo.new(menuTweenTime, Enum.EasingStyle.Sine), goal):Play()
-end)
-
--- Toggle Highlights
-highlightBtn.MouseButton1Click:Connect(function()
-	toggleHighlights = not toggleHighlights
-	highlightBtn.Text = toggleHighlights and "Highlights: ON" or "Highlights: OFF"
-	highlightBtn.BackgroundColor3 = toggleHighlights and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(100, 100, 100)
-
+-- Create toggles
+createToggle("Highlight", 50, highlightEnabled, function(state)
+	highlightEnabled = state
 	for _, data in pairs(highlights) do
-		if data.highlight then
-			data.highlight.Enabled = toggleHighlights
-		end
-		if data.billboard then
-			data.billboard.Enabled = toggleHighlights
-		end
+		if data.highlight then data.highlight.Enabled = state end
+		if data.billboard then data.billboard.Enabled = state end
 	end
 end)
 
--- Toggle Aim Assist
-aimBtn.MouseButton1Click:Connect(function()
-	aimAssistEnabled = not aimAssistEnabled
-	aimBtn.Text = aimAssistEnabled and "Aim Assist: ON" or "Aim Assist: OFF"
-	aimBtn.BackgroundColor3 = aimAssistEnabled and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(100, 100, 100)
+createToggle("Aim Assist", 90, aimAssistEnabled, function(state)
+	aimAssistEnabled = state
 end)
 
--- Add highlights/tags
+createToggle("Spin Mode", 130, spinEnabled, function(state)
+	spinEnabled = state
+end)
+
+-- Radius Slider Label
+local radiusLabel = Instance.new("TextLabel")
+radiusLabel.Size = UDim2.new(1, -20, 0, 20)
+radiusLabel.Position = UDim2.new(0, 10, 0, 170)
+radiusLabel.TextColor3 = Color3.new(1, 1, 1)
+radiusLabel.BackgroundTransparency = 1
+radiusLabel.Text = "Aim Radius: " .. tostring(aimRadius)
+radiusLabel.Font = Enum.Font.Gotham
+radiusLabel.TextSize = 14
+radiusLabel.Parent = frame
+
+-- Radius Slider
+local radiusSlider = Instance.new("TextButton")
+radiusSlider.Size = UDim2.new(1, -20, 0, 20)
+radiusSlider.Position = UDim2.new(0, 10, 0, 190)
+radiusSlider.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+radiusSlider.Text = "Click to increase (Hold Shift = -5)"
+radiusSlider.TextColor3 = Color3.new(1, 1, 1)
+radiusSlider.Font = Enum.Font.Gotham
+radiusSlider.TextSize = 12
+radiusSlider.MouseButton1Click:Connect(function()
+	local change = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and -5 or 5
+	aimRadius = math.clamp(aimRadius + change, 5, 200)
+	radiusLabel.Text = "Aim Radius: " .. tostring(aimRadius)
+end)
+radiusSlider.Parent = frame
+
+-- Toggle visibility
+closeBtn.MouseButton1Click:Connect(function()
+	frame.Visible = false
+	openBtn.Visible = true
+end)
+
+openBtn.MouseButton1Click:Connect(function()
+	frame.Visible = true
+	openBtn.Visible = false
+end)
+
+-- Highlight logic
 local function addHighlight(player)
 	if player == localPlayer then return end
 	if highlights[player] then return end
@@ -119,15 +155,14 @@ local function addHighlight(player)
 		highlight.FillTransparency = 1
 		highlight.OutlineTransparency = 0
 		highlight.Adornee = character
-		highlight.Enabled = toggleHighlights
+		highlight.Enabled = highlightEnabled
 		highlight.Parent = character
 
 		local billboard = Instance.new("BillboardGui", head)
 		billboard.Size = UDim2.new(0, 100, 0, 40)
 		billboard.StudsOffset = Vector3.new(0, 2.5, 0)
 		billboard.AlwaysOnTop = true
-		billboard.Name = "NameTag"
-		billboard.Enabled = toggleHighlights
+		billboard.Enabled = highlightEnabled
 
 		local label = Instance.new("TextLabel", billboard)
 		label.Size = UDim2.new(1, 0, 1, 0)
@@ -143,49 +178,45 @@ local function addHighlight(player)
 		}
 	end
 
-	if player.Character then
-		onCharacter(player.Character)
-	end
-
+	if player.Character then onCharacter(player.Character) end
 	player.CharacterAdded:Connect(onCharacter)
 end
 
--- Connect to all players
-for _, player in pairs(Players:GetPlayers()) do
-	addHighlight(player)
-end
-
+-- Init highlights
+for _, player in pairs(Players:GetPlayers()) do addHighlight(player) end
 Players.PlayerAdded:Connect(addHighlight)
-Players.PlayerRemoving:Connect(function(player)
-	highlights[player] = nil
-end)
+Players.PlayerRemoving:Connect(function(p) highlights[p] = nil end)
 
--- Aim Assist Logic
+-- Main loop
 RunService.RenderStepped:Connect(function()
-	if not aimAssistEnabled then return end
-
-	local closestHead = nil
-	local closestDistance = aimRadius
-
-	for _, player in pairs(Players:GetPlayers()) do
-		if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
-			local head = player.Character.Head
-			local screenPoint, onScreen = camera:WorldToViewportPoint(head.Position)
-
-			if onScreen then
-				local mousePos = UserInputService:GetMouseLocation()
-				local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
-				if distance < closestDistance then
-					closestDistance = distance
-					closestHead = head
+	-- Aim Assist
+	if aimAssistEnabled then
+		local closestHead
+		local closestDist = aimRadius
+		for _, player in pairs(Players:GetPlayers()) do
+			if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
+				local head = player.Character.Head
+				local screenPos, onScreen = camera:WorldToViewportPoint(head.Position)
+				if onScreen then
+					local mousePos = UserInputService:GetMouseLocation()
+					local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
+					if dist < closestDist then
+						closestDist = dist
+						closestHead = head
+					end
 				end
 			end
 		end
+		if closestHead then
+			local camPos = camera.CFrame.Position
+			camera.CFrame = CFrame.new(camPos, closestHead.Position)
+		end
 	end
 
-	if closestHead then
-		local camPosition = camera.CFrame.Position
-		local direction = (closestHead.Position - camPosition).Unit
-		camera.CFrame = CFrame.new(camPosition, camPosition + direction)
-	end
-end)
+	-- Spin Mode
+	if spinEnabled and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		spinningAngle += math.rad(2)
+		local hrp = localPlayer.Character.HumanoidRootPart
+		local cf = hrp.CFrame
+		hr...
+}
