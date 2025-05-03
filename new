@@ -1,0 +1,99 @@
+-- Jamuns Rblx Hacks [Developer Debug Menu]
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- UI Setup
+local ScreenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+ScreenGui.Name = "JamunsRblxHacks"
+
+local AimAssistEnabled = false
+local ESPEnabled = false
+local SpinbotEnabled = false
+
+-- Aim Assist Toggle
+local function toggleAimAssist()
+    AimAssistEnabled = not AimAssistEnabled
+end
+
+-- ESP Toggle
+local function toggleESP()
+    ESPEnabled = not ESPEnabled
+end
+
+-- Spinbot Toggle
+local function toggleSpinbot()
+    SpinbotEnabled = not SpinbotEnabled
+end
+
+-- Simple keybinds (for demo/testing purposes only)
+game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.H then toggleAimAssist() end
+    if input.KeyCode == Enum.KeyCode.J then toggleESP() end
+    if input.KeyCode == Enum.KeyCode.K then toggleSpinbot() end
+end)
+
+-- Aim Assist Logic
+RunService.RenderStepped:Connect(function()
+    if AimAssistEnabled then
+        local closestPlayer, minDistance = nil, math.huge
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                local head = player.Character.Head
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if dist < minDistance then
+                        minDistance = dist
+                        closestPlayer = head
+                    end
+                end
+            end
+        end
+
+        if closestPlayer then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position)
+        end
+    end
+end)
+
+-- ESP Logic
+local function createESPBox(part)
+    local box = Instance.new("BoxHandleAdornment")
+    box.Size = part.Size
+    box.Adornee = part
+    box.AlwaysOnTop = true
+    box.ZIndex = 5
+    box.Color3 = Color3.new(1, 0, 0)
+    box.Transparency = 0.5
+    box.Parent = part
+    return box
+end
+
+local function applyESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            for _, part in pairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") and not part:FindFirstChildOfClass("BoxHandleAdornment") then
+                    createESPBox(part)
+                end
+            end
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if ESPEnabled then
+        applyESP()
+    end
+end)
+
+-- Spinbot Logic
+RunService.RenderStepped:Connect(function()
+    if SpinbotEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(15), 0)
+    end
+end)
