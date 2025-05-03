@@ -1,0 +1,93 @@
+-- Jamuns Rblx Hacks [Mobile Developer GUI]
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Feature States
+local AimAssistEnabled = false
+local ESPEnabled = false
+
+-- GUI Setup
+local gui = Instance.new("ScreenGui")
+gui.Name = "JamunsRblxHacks"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Button Creation Helper
+local function createButton(name, position, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 120, 0, 40)
+    btn.Position = position
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 18
+    btn.Parent = gui
+
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Button Actions
+createButton("Aim Assist", UDim2.new(0, 10, 0, 60), function()
+    AimAssistEnabled = not AimAssistEnabled
+end)
+
+createButton("ESP", UDim2.new(0, 10, 0, 110), function()
+    ESPEnabled = not ESPEnabled
+end)
+
+-- Aim Assist Logic
+RunService.RenderStepped:Connect(function()
+    if AimAssistEnabled then
+        local closestPlayer, minDistance = nil, math.huge
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                local head = player.Character.Head
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if dist < minDistance then
+                        minDistance = dist
+                        closestPlayer = head
+                    end
+                end
+            end
+        end
+
+        if closestPlayer then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position)
+        end
+    end
+end)
+
+-- ESP Logic
+local function createESPBox(part)
+    local box = Instance.new("BoxHandleAdornment")
+    box.Size = part.Size
+    box.Adornee = part
+    box.AlwaysOnTop = true
+    box.ZIndex = 5
+    box.Color3 = Color3.new(1, 0, 0)
+    box.Transparency = 0.5
+    box.Parent = part
+end
+
+local function applyESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            for _, part in ipairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") and not part:FindFirstChildWhichIsA("BoxHandleAdornment") then
+                    createESPBox(part)
+                end
+            end
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if ESPEnabled then
+        applyESP()
+    end
+end)
