@@ -1,0 +1,191 @@
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local localPlayer = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- Settings
+local toggleHighlights = true
+local aimAssistEnabled = true
+local aimRadius = 50 -- pixels
+
+local highlights = {}
+
+-- GUI setup
+local screenGui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
+screenGui.Name = "JamunsGui"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+
+-- Main menu frame
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 220, 0, 160)
+frame.Position = UDim2.new(0, 20, 0, 80)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.BackgroundTransparency = 0.2
+frame.BorderSizePixel = 0
+frame.Name = "MenuFrame"
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Text = "Jamuns Roblox Script"
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255, 100, 100)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+
+-- Highlights Button
+local highlightBtn = Instance.new("TextButton", frame)
+highlightBtn.Text = "Highlights: ON"
+highlightBtn.Size = UDim2.new(1, -20, 0, 30)
+highlightBtn.Position = UDim2.new(0, 10, 0, 40)
+highlightBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+highlightBtn.TextColor3 = Color3.new(1, 1, 1)
+highlightBtn.Font = Enum.Font.Gotham
+highlightBtn.TextSize = 16
+highlightBtn.BorderSizePixel = 0
+
+-- Aim Assist Button
+local aimBtn = Instance.new("TextButton", frame)
+aimBtn.Text = "Aim Assist: ON"
+aimBtn.Size = UDim2.new(1, -20, 0, 30)
+aimBtn.Position = UDim2.new(0, 10, 0, 80)
+aimBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+aimBtn.TextColor3 = Color3.new(1, 1, 1)
+aimBtn.Font = Enum.Font.Gotham
+aimBtn.TextSize = 16
+aimBtn.BorderSizePixel = 0
+
+-- Toggle Menu Button (Mobile-friendly)
+local menuToggleBtn = Instance.new("TextButton", screenGui)
+menuToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+menuToggleBtn.Position = UDim2.new(0, 10, 0, 20)
+menuToggleBtn.Text = "☰"
+menuToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+menuToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+menuToggleBtn.Font = Enum.Font.GothamBold
+menuToggleBtn.TextSize = 24
+menuToggleBtn.BorderSizePixel = 0
+menuToggleBtn.ZIndex = 2
+
+local menuVisible = true
+local menuTweenTime = 0.3
+
+menuToggleBtn.MouseButton1Click:Connect(function()
+	menuVisible = not menuVisible
+	local goal = {}
+	goal.Position = menuVisible and UDim2.new(0, 20, 0, 80) or UDim2.new(0, -240, 0, 80)
+	TweenService:Create(frame, TweenInfo.new(menuTweenTime, Enum.EasingStyle.Sine), goal):Play()
+end)
+
+-- Toggle Highlights
+highlightBtn.MouseButton1Click:Connect(function()
+	toggleHighlights = not toggleHighlights
+	highlightBtn.Text = toggleHighlights and "Highlights: ON" or "Highlights: OFF"
+	highlightBtn.BackgroundColor3 = toggleHighlights and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(100, 100, 100)
+
+	for _, data in pairs(highlights) do
+		if data.highlight then
+			data.highlight.Enabled = toggleHighlights
+		end
+		if data.billboard then
+			data.billboard.Enabled = toggleHighlights
+		end
+	end
+end)
+
+-- Toggle Aim Assist
+aimBtn.MouseButton1Click:Connect(function()
+	aimAssistEnabled = not aimAssistEnabled
+	aimBtn.Text = aimAssistEnabled and "Aim Assist: ON" or "Aim Assist: OFF"
+	aimBtn.BackgroundColor3 = aimAssistEnabled and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(100, 100, 100)
+end)
+
+-- Add highlights/tags
+local function addHighlight(player)
+	if player == localPlayer then return end
+	if highlights[player] then return end
+
+	local function onCharacter(character)
+		local head = character:WaitForChild("Head")
+
+		local highlight = Instance.new("Highlight")
+		highlight.FillColor = Color3.fromRGB(255, 0, 0)
+		highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+		highlight.FillTransparency = 1
+		highlight.OutlineTransparency = 0
+		highlight.Adornee = character
+		highlight.Enabled = toggleHighlights
+		highlight.Parent = character
+
+		local billboard = Instance.new("BillboardGui", head)
+		billboard.Size = UDim2.new(0, 100, 0, 40)
+		billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+		billboard.AlwaysOnTop = true
+		billboard.Name = "NameTag"
+		billboard.Enabled = toggleHighlights
+
+		local label = Instance.new("TextLabel", billboard)
+		label.Size = UDim2.new(1, 0, 1, 0)
+		label.BackgroundTransparency = 1
+		label.Text = player.Name
+		label.TextColor3 = Color3.fromRGB(255, 0, 0)
+		label.Font = Enum.Font.GothamBold
+		label.TextScaled = true
+
+		highlights[player] = {
+			highlight = highlight,
+			billboard = billboard
+		}
+	end
+
+	if player.Character then
+		onCharacter(player.Character)
+	end
+
+	player.CharacterAdded:Connect(onCharacter)
+end
+
+-- Connect to all players
+for _, player in pairs(Players:GetPlayers()) do
+	addHighlight(player)
+end
+
+Players.PlayerAdded:Connect(addHighlight)
+Players.PlayerRemoving:Connect(function(player)
+	highlights[player] = nil
+end)
+
+-- Aim Assist Logic
+RunService.RenderStepped:Connect(function()
+	if not aimAssistEnabled then return end
+
+	local closestHead = nil
+	local closestDistance = aimRadius
+
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
+			local head = player.Character.Head
+			local screenPoint, onScreen = camera:WorldToViewportPoint(head.Position)
+
+			if onScreen then
+				local mousePos = UserInputService:GetMouseLocation()
+				local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
+				if distance < closestDistance then
+					closestDistance = distance
+					closestHead = head
+				end
+			end
+		end
+	end
+
+	if closestHead then
+		local camPosition = camera.CFrame.Position
+		local direction = (closestHead.Position - camPosition).Unit
+		camera.CFrame = CFrame.new(camPosition, camPosition + direction)
+	end
+end)
