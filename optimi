@@ -1,0 +1,183 @@
+-- Jamuns Rblx Hacks [Mobile Developer GUI – Cool Design + Rapid Fire + ESP Optimiert]
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Feature States
+local AimAssistEnabled = false
+local ESPEnabled = false
+local RapidFireEnabled = false
+local espBoxes = {}
+
+-- UI Setup
+local gui = Instance.new("ScreenGui")
+gui.Name = "JamunsRblxHacks"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 180, 0, 250)
+mainFrame.Position = UDim2.new(0, 10, 0.5, -125)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.BackgroundTransparency = 0.2
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = gui
+
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 10)
+uicorner.Parent = mainFrame
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 10)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Top
+layout.Parent = mainFrame
+
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "Jamuns Rblx Hacks"
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.Parent = mainFrame
+
+-- Styled Button Generator
+local function createStyledButton(text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Text = text
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 16
+    btn.Parent = mainFrame
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Buttons für Funktionen
+createStyledButton("Toggle Aim Assist", function()
+    AimAssistEnabled = not AimAssistEnabled
+end)
+
+createStyledButton("Toggle ESP", function()
+    ESPEnabled = not ESPEnabled
+    if not ESPEnabled then
+        for _, box in ipairs(espBoxes) do
+            if box and box.Parent then
+                box:Destroy()
+            end
+        end
+        espBoxes = {}
+    end
+end)
+
+createStyledButton("Toggle Rapid Fire", function()
+    RapidFireEnabled = not RapidFireEnabled
+end)
+
+-- AIM ASSIST
+RunService.RenderStepped:Connect(function()
+    if AimAssistEnabled then
+        local closestPlayer, minDistance = nil, math.huge
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                local head = player.Character.Head
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if dist < minDistance then
+                        minDistance = dist
+                        closestPlayer = head
+                    end
+                end
+            end
+        end
+
+        if closestPlayer then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position)
+        end
+    end
+end)
+
+-- Besseres ESP
+local function createESPBox(part)
+    if not part:FindFirstChild("ESPBox") then
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "ESPBox"
+        box.Size = part.Size
+        box.Adornee = part
+        box.AlwaysOnTop = true
+        box.ZIndex = 5
+        box.Color3 = Color3.new(1, 0, 0)
+        box.Transparency = 0.5
+        box.Parent = part
+        table.insert(espBoxes, box)
+    end
+end
+
+local function applyESP()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            for _, part in ipairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    createESPBox(part)
+                end
+            end
+        end
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if ESPEnabled then
+        applyESP()
+    end
+end)
+
+-- RAPID FIRE
+local firing = false
+
+local function getEquippedTool()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+end
+
+RunService.RenderStepped:Connect(function()
+    if RapidFireEnabled and firing then
+        local tool = getEquippedTool()
+        if tool and tool:FindFirstChild("Activate") then
+            tool:Activate()
+        elseif tool and tool.Activate then
+            pcall(function() tool:Activate() end)
+        end
+    end
+end)
+
+-- Touch-based firing (mobile)
+UserInputService.TouchStarted:Connect(function()
+    firing = true
+end)
+
+UserInputService.TouchEnded:Connect(function()
+    firing = false
+end)
+
+-- PC fallback
+UserInputService.InputBegan:Connect(function(input, gp)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        firing = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gp)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        firing = false
+    end
+end)
