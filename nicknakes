@@ -1,0 +1,241 @@
+-- Jamuns Rblx Hacks [Mobile Developer GUI – Alle Funktionen]
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Feature States
+local features = {
+    AimAssist = false,
+    ESP = false,
+    RapidFire = false,
+    Fly = false,
+    NoClip = false,
+    Spinbot = false,
+    SpeedHack = false,
+    JumpHack = false,
+    Invisibility = false,
+    Godmode = false,
+    TeleportToEnemy = false,
+    AutoKill = false,
+    AutoTeleportOnSpawn = false
+}
+
+-- GUI Setup
+local gui = Instance.new("ScreenGui")
+gui.Name = "JamunsRblxHacks"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 200, 0, 400)
+mainFrame.Position = UDim2.new(0, 10, 0.5, -200)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BackgroundTransparency = 0.3
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = gui
+
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(0, 12)
+uicorner.Parent = mainFrame
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 12)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.VerticalAlignment = Enum.VerticalAlignment.Top
+layout.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "Jamuns Rblx Hacks"
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.Parent = mainFrame
+
+-- Styled Button Generator
+local function createStyledButton(text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Text = text
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 16
+    btn.Parent = mainFrame
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(callback)
+end
+
+-- Buttons für Funktionen
+createStyledButton("Toggle Aim Assist", function()
+    features.AimAssist = not features.AimAssist
+end)
+
+createStyledButton("Toggle ESP", function()
+    features.ESP = not features.ESP
+end)
+
+createStyledButton("Toggle Rapid Fire", function()
+    features.RapidFire = not features.RapidFire
+end)
+
+createStyledButton("Toggle Fly", function()
+    features.Fly = not features.Fly
+end)
+
+createStyledButton("Toggle No Clip", function()
+    features.NoClip = not features.NoClip
+end)
+
+createStyledButton("Toggle Spinbot", function()
+    features.Spinbot = not features.Spinbot
+end)
+
+createStyledButton("Toggle Speed Hack", function()
+    features.SpeedHack = not features.SpeedHack
+end)
+
+createStyledButton("Toggle Jump Hack", function()
+    features.JumpHack = not features.JumpHack
+end)
+
+createStyledButton("Toggle Invisibility", function()
+    features.Invisibility = not features.Invisibility
+end)
+
+createStyledButton("Toggle Godmode", function()
+    features.Godmode = not features.Godmode
+end)
+
+createStyledButton("Teleport to Enemy", function()
+    features.TeleportToEnemy = true -- einmalige Aktivierung
+end)
+
+createStyledButton("Toggle Auto Kill", function()
+    features.AutoKill = not features.AutoKill
+end)
+
+createStyledButton("AutoTP bei Spawn", function()
+    features.AutoTeleportOnSpawn = not features.AutoTeleportOnSpawn
+end)
+
+-- Funktionen für Features
+local function applyFeatures()
+    -- Aim Assist
+    if features.AimAssist then
+        local closest, minDist = nil, math.huge
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                local head = player.Character.Head
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        closest = head
+                    end
+                end
+            end
+        end
+
+        if closest then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, closest.Position)
+        end
+    end
+
+    -- ESP
+    if features.ESP then
+        -- Code für ESP
+    end
+
+    -- Rapid Fire
+    if features.RapidFire then
+        -- Code für Rapid Fire
+    end
+
+    -- Fly
+    if features.Fly then
+        -- Code für Fly
+    end
+
+    -- No Clip
+    if features.NoClip then
+        -- Code für No Clip
+    end
+
+    -- Spinbot
+    if features.Spinbot then
+        -- Code für Spinbot
+    end
+
+    -- Speed Hack
+    if features.SpeedHack then
+        -- Code für Speed Hack
+    end
+
+    -- Jump Hack
+    if features.JumpHack then
+        -- Code für Jump Hack
+    end
+
+    -- Invisibility
+    if features.Invisibility then
+        -- Code für Invisibility
+    end
+
+    -- Godmode
+    if features.Godmode then
+        -- Code für Godmode
+    end
+
+    -- Auto Kill
+    if features.AutoKill then
+        local closest, minDist = nil, math.huge
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local distance = (player.Character.HumanoidRootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                if distance < minDist then
+                    minDist = distance
+                    closest = player
+                end
+            end
+        end
+        if closest and closest.Character and closest.Character:FindFirstChild("Humanoid") then
+            -- Teleportieren und Schaden zufügen
+            LocalPlayer.Character:SetPrimaryPartCFrame(closest.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0))
+            closest.Character.Humanoid:TakeDamage(100) -- Lokaler Versuch (nur bei nicht-servergesperrten Spielen)
+        end
+    end
+end
+
+-- Auto-Teleport bei Spawn
+LocalPlayer.CharacterAdded:Connect(function(char)
+    if features.AutoTeleportOnSpawn then
+        task.wait(1)
+        local closest, minDist = nil, math.huge
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local distance = (player.Character.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
+                if distance < minDist then
+                    minDist = distance
+                    closest = player
+                end
+            end
+        end
+        if closest and closest.Character then
+            char:SetPrimaryPartCFrame(closest.Character.HumanoidRootPart.CFrame * CFrame.new(0, 3, 0))
+        end
+    end
+end)
+
+-- Update-Funktion
+RunService.RenderStepped:Connect(function()
+    applyFeatures()
+end)
