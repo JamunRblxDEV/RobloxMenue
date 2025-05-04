@@ -1,0 +1,114 @@
+-- Jamun Local (Mobile Version)
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- GUI setup
+local screenGui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+screenGui.Name = "JamunLocalUI"
+screenGui.ResetOnSpawn = false
+
+local toggleBtn = Instance.new("TextButton", screenGui)
+toggleBtn.Size = UDim2.new(0, 50, 0, 50)
+toggleBtn.Position = UDim2.new(1, -60, 1, -60)
+toggleBtn.Text = "☰"
+toggleBtn.TextSize = 28
+toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.ZIndex = 2
+
+local menuFrame = Instance.new("Frame", screenGui)
+menuFrame.Size = UDim2.new(0, 220, 0, 150)
+menuFrame.Position = UDim2.new(1, -240, 1, -220)
+menuFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+menuFrame.Visible = false
+menuFrame.ZIndex = 1
+Instance.new("UICorner", menuFrame).CornerRadius = UDim.new(0, 10)
+
+local title = Instance.new("TextLabel", menuFrame)
+title.Text = "Jamun Local"
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBold
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 20
+
+-- Create Toggle Buttons
+local function createToggleBtn(name, yPosition)
+	local btn = Instance.new("TextButton", menuFrame)
+	btn.Name = name
+	btn.Position = UDim2.new(0, 10, 0, yPosition)
+	btn.Size = UDim2.new(1, -20, 0, 35)
+	btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	btn.TextColor3 = Color3.new(1, 1, 1)
+	btn.Font = Enum.Font.Gotham
+	btn.TextSize = 16
+	btn.Text = name .. ": OFF"
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+	return btn
+end
+
+local highlightBtn = createToggleBtn("Highlight", 40)
+local aimBtn = createToggleBtn("AimLock", 85)
+
+-- Logic States
+local highlightOn = false
+local aimOn = false
+local highlights = {}
+
+-- Toggle menu visibility
+toggleBtn.MouseButton1Click:Connect(function()
+	menuFrame.Visible = not menuFrame.Visible
+end)
+
+-- Highlight function
+local function updateHighlights()
+	for _, obj in pairs(workspace:GetDescendants()) do
+		if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") and obj ~= LocalPlayer.Character then
+			if highlightOn and not highlights[obj] then
+				local h = Instance.new("Highlight")
+				h.FillColor = Color3.fromRGB(255, 0, 0)
+				h.OutlineColor = Color3.fromRGB(255, 0, 0)
+				h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+				h.Parent = obj
+				highlights[obj] = h
+			elseif not highlightOn and highlights[obj] then
+				highlights[obj]:Destroy()
+				highlights[obj] = nil
+			end
+		end
+	end
+end
+
+-- Toggle buttons logic
+highlightBtn.MouseButton1Click:Connect(function()
+	highlightOn = not highlightOn
+	highlightBtn.Text = "Highlight: " .. (highlightOn and "ON" or "OFF")
+	updateHighlights()
+end)
+
+aimBtn.MouseButton1Click:Connect(function()
+	aimOn = not aimOn
+	aimBtn.Text = "AimLock: " .. (aimOn and "ON" or "OFF")
+end)
+
+-- Aim lock loop
+RunService.RenderStepped:Connect(function()
+	if aimOn then
+		local closest, minDist = nil, math.huge
+		for _, obj in pairs(workspace:GetDescendants()) do
+			if obj:IsA("Model") and obj:FindFirstChild("Head") and obj:FindFirstChild("Humanoid") and obj ~= LocalPlayer.Character then
+				local dist = (Camera.CFrame.Position - obj.Head.Position).Magnitude
+				if dist < minDist then
+					closest = obj.Head
+					minDist = dist
+				end
+			end
+		end
+		if closest then
+			Camera.CFrame = CFrame.new(Camera.CFrame.Position, closest.Position)
+		end
+	end
+end)
